@@ -10,6 +10,7 @@ import '../providers/booking_provider.dart';
 import '../services/review_service.dart';
 import '../widgets/fx_widgets.dart';
 import 'announcements_screen.dart';
+import 'notification_history_screen.dart';
 import 'booking_details_screen.dart';
 import 'chat_screen.dart';
 import 'create_booking_screen.dart';
@@ -159,7 +160,18 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
         final scheduled = inWindow.where((b) {
           if (b.id == activeRide?.id) return false;
           final s = b.status?.toLowerCase() ?? '';
-          return s != 'ongoing' && s != 'completed' && s != 'cancelled' && s != 'no-show';
+          if (s == 'ongoing' || s == 'completed' || s == 'cancelled' || s == 'no-show' || s == 'expired') return false;
+          
+          // Do not show past non-active rides in upcoming
+          if (b.date != null) {
+            final d = DateTime.tryParse(b.date!);
+            if (d != null) {
+              final dOnly = DateTime(d.year, d.month, d.day);
+              final todayOnly = DateTime(now.year, now.month, now.day);
+              if (dOnly.isBefore(todayOnly)) return false;
+            }
+          }
+          return true;
         }).toList()
           ..sort((a, b) {
             final c = (a.date ?? '').compareTo(b.date ?? '');
@@ -284,12 +296,13 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
               ],
             ),
           ),
+
           Consumer<AnnouncementProvider>(
             builder: (_, ap, __) => Stack(
               clipBehavior: Clip.none,
               children: [
                 _iconButton(
-                  Icons.notifications_outlined,
+                  Icons.campaign_outlined,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
@@ -312,6 +325,14 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
                     ),
                   ),
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _iconButton(
+            Icons.notifications_outlined,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationHistoryScreen()),
             ),
           ),
           const SizedBox(width: 8),
@@ -1031,7 +1052,15 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
     final raw = b.shiftTime ?? b.pickupTime ?? '';
     if (raw.isEmpty) return '--:--';
     final t = raw.length > 5 ? raw.substring(0, 5) : raw;
-    // Add a 45-minute "estimated arrival" upper bound for the time-range look.
+
+    // Use backend drop time if available
+    String? dropTime = b.dropTime ?? b.routeDetails?['drop_time']?.toString() ?? b.routeDetails?['estimated_drop_time']?.toString();
+    if (dropTime != null && dropTime.isNotEmpty) {
+      final dt = dropTime.length > 5 ? dropTime.substring(0, 5) : dropTime;
+      return '$t - $dt';
+    }
+
+    // Fallback: Add a 45-minute "estimated arrival" upper bound for the time-range look.
     final parts = t.split(':');
     if (parts.length < 2) return t;
     final h = int.tryParse(parts[0]) ?? 0;

@@ -47,6 +47,20 @@ class AuthService {
                  if (employee['gender'] != null) {
                    await prefs.setString('gender', employee['gender'].toString());
                  }
+                 if (employee['name'] != null) {
+                   await prefs.setString('name', employee['name'].toString());
+                 }
+                 if (employee['email'] != null) {
+                   await prefs.setString('email', employee['email'].toString());
+                 }
+                 final phone = employee['contact_number'] ?? employee['phone_number'] ?? employee['phone'];
+                 if (phone != null) {
+                   await prefs.setString('phone', phone.toString());
+                 }
+                 final address = employee['address'] ?? employee['home_address'];
+                 if (address != null) {
+                   await prefs.setString('address', address.toString());
+                 }
              }
         }
         
@@ -175,6 +189,16 @@ class AuthService {
                  await prefs.setString('employee_id', employee['employee_id'].toString());
                  if (employee['gender'] != null) {
                    await prefs.setString('gender', employee['gender'].toString());
+                 }
+                 if (employee['name'] != null) {
+                   await prefs.setString('name', employee['name'].toString());
+                 }
+                 if (employee['email'] != null) {
+                   await prefs.setString('email', employee['email'].toString());
+                 }
+                 final phone = employee['contact_number'] ?? employee['phone_number'] ?? employee['phone'];
+                 if (phone != null) {
+                   await prefs.setString('phone', phone.toString());
                  }
              }
         }
